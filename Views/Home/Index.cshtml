@@ -1,8 +1,87 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+	Layout = null;
+	ViewData["Title"] = "Home Page";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<!DOCTYPE html>
+<html>
+<head>
+	<meta name="viewport" content="width=device-width" />
+	<title>Загрузка файлов</title>
+	<link href="~/lib/bootstrap/dist/css/bootstrap-reboot.min.css" />
+	<link href="~/lib/bootstrap/dist/css/bootstrap-grid.min.css" />
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+	<link href="~/css/site.css">
+</head>
+<body>
+	<div class="container">
+		<div class="d-flex justify-content-center align-items-center" style="height: 100vh";>
+			<form id="FileUploadForm" asp-action="Upload" asp-controller="Home"
+				  method="post" enctype="multipart/form-data">
+				<input id="uploadfile" name="uploadfile" type="file" />
+				<button name="uploadbtn" type="submit">Загрузить файл на сервер</button>
+				<img id="progress" src="~/images/Loader.gif" height="20" width="20" style="vertical-align:bottom;" />
+			</form>
+			<br>
+			<span id="ret_result"></span>
+		</div>
+	</div>
+
+	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+	<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+	<script>
+		$("#progress").hide(); $("#ret_result").html('');
+		$(function () {
+			$("#uploadfile").change(function () {
+
+				//поскольку это загрузка одного файла, я использую только первый индекс
+				var f = this.files[0]
+
+				//здесь я проверяю, больше ли размер файла, чем 1 МБ (числа ниже указаны в байтах)
+				if (f.size > 1048576 || f.fileSize > 1048576) {
+					alert("Превышен допустимый размер файла. (Максимальный размер - 1 МБ)")
+					this.value = null;
+				}
+			})
+		});
+		$(function () {
+			$("#FileUploadForm").submit(function (e) {
+				e.preventDefault();
+
+				console.log('Выполнение отправки ajax');
+				$("#progress").show();
+				$("#ret_result").html('');
+
+				var formAction = $(this).attr("action");
+				var fdata = new FormData();
+
+				var fileInput = $('#uploadfile')[0];
+				var file = fileInput.files[0];
+				fdata.append("file", file);
+
+				$.ajax({
+					type: 'post',
+					url: formAction,
+					data: fdata,
+					processData: false,
+					contentType: false
+				}).done(function (result) {
+					console.log(result);
+					$("#progress").hide();
+					if (result.status === "success") {
+						const currentDate = new Date();
+						var day = currentDate.getDate();
+						var month = currentDate.getMonth() + 1; // Месяца в объекте Date() начинаются с 0 (январь), поэтому добавляем 1
+						var year = currentDate.getFullYear();
+
+						// Выводим текущую дату в формате ДД-ММ-ГГГГ
+						$("#ret_result").html(`${result.url} - загружен в папку uploads 0${day} 0${month} ${year}г.`);
+					} else {
+						$("#ret_result").html('<b style="color:red;">' + result.message + '</b>');
+					}
+				});
+			});
+		})
+	</script>
+</body>
+</html>
